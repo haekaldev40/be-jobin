@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  APPLICANT
+  RECRUITER
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  email String @unique
+  password String
+  role UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile relations
+  applicantProfile ApplicantProfile?
+  recruiterProfile RecruiterProfile?
+}
+
+model ApplicantProfile {
+  id Int @id @default(autoincrement())
+  firstName String
+  lastName String
+  phoneNumber String?
+  address String?
+  education String?
+  experience String?
+  skills String[]
+  resume String? // URL to stored resume file
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  userId Int @unique
+  jobApplications JobApplication[]
+}
+
+model RecruiterProfile {
+  id Int @id @default(autoincrement())
+  companyName String
+  industry String
+  companySize String?
+  companyDescription String?
+  companyLogo String? // URL to stored company logo
+  website String?
+  location String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  userId Int @unique
+  jobPostings JobPosting[]
+}
+
+model JobPosting {
+  id Int @id @default(autoincrement())
+  title String
+  description String
+  requirements String[]
+  salary String?
+  location String
+  employmentType String // Full-time, Part-time, Contract, etc.
+  experienceLevel String? // Entry, Mid, Senior
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  recruiter RecruiterProfile @relation(fields: [recruiterId], references: [id])
+  recruiterId Int
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id Int @id @default(autoincrement())
+  status String // Pending, Reviewed, Shortlisted, Rejected, Accepted
+  coverLetter String?
+  cvResume String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+  // Relations
+  applicant ApplicantProfile @relation(fields: [applicantId], references: [id])
+  applicantId Int
+  jobPosting JobPosting @relation(fields: [jobPostingId], references: [id])
+  jobPostingId Int
+
+  @@unique([applicantId, jobPostingId]) // Prevent duplicate applications
+}
